@@ -1,5 +1,6 @@
 import { Propiedad } from "../models/property.js";
 import { subirArchivoAFirebase, eliminarArchivoAntiguo } from "../utils/firebaseUtil.js";
+import { deleteFileFromFirebase } from "../utils/firebaseUtil.js"; // Asegúrate de que esta función exista
 
 export const createProperty = async (req, res) => {
     const {
@@ -207,7 +208,11 @@ export const getAllProperties = async (req, res) => {
 export const getPropertyByType = async (req, res) => {
     const{tipo_operacion} = req.params;
     try {
-        const properties = await Propiedad.find({tipo_operacion: tipo_operacion});
+        const query = { 
+            tipo_operacion: tipo_operacion, 
+            is_activated: true,  // Validación para no mostrar propiedades inactivas
+        };
+        const properties = await Propiedad.find(query);
         res.status(200).json(properties);
     } catch (error) {
         console.error('Error obteniendo propiedades por tipo:', error);
@@ -219,7 +224,7 @@ export const getPropertyByType = async (req, res) => {
 export const getFeaturedProperties = async (req, res) => {
     try {
         // Filtrar propiedades donde propiedad_destacada es true
-        const featuredProperties = await Propiedad.find({ mostrar_propiedad: true }) 
+        const featuredProperties = await Propiedad.find({ propiedad_destacada: true }) 
             .populate({
                 path: 'agent', // Relación con el modelo 'Agente'
                 select: 'nombre apellido telefono_agente titulo_agente foto_agente', // Campos que deseas obtener
@@ -322,7 +327,7 @@ export const desactivateProperty = async (req, res) => {
     try {
         const property = await Propiedad.findByIdAndUpdate(
             _id,
-            { is_activated: false },
+            { is_activated: false, mostrar_propiedad: false, propiedad_destacada: false }, // Desactivar la propiedad, inhabilitándola, ocultándola y desmarcándola como destacada
             { new: true }
         );
 
@@ -337,6 +342,97 @@ export const desactivateProperty = async (req, res) => {
     }
 };
 
+export const activateProperty = async (req, res) => {
+    const { _id } = req.params;
+
+    try {
+        const property = await Propiedad.findByIdAndUpdate(
+            _id,
+            { is_activated: true, mostrar_propiedad: true, propiedad_destacada: true }, // Activar la propiedad
+            { new: true }
+        );
+
+        if (!property) {
+            return res.status(404).json({ message: 'Propiedad no encontrada' });
+        }
+
+        res.status(200).json({ message: 'Propiedad activada exitosamente', property });
+    } catch (error) {
+        console.error('Error activando propiedad:', error);
+        res.status(500).json({ message: 'Error activando propiedad', error: error.message });
+    }
+};
+
+export const dropProperty = async (req, res) => {
+    const { _id } = req.params;
+
+    try {
+        // Primero obtener la propiedad para verificar si está desactivada
+        const property = await Propiedad.findById(_id);
+
+        if (!property) {
+            return res.status(404).json({ message: 'Propiedad no encontrada' });
+        }
+
+        // Verificar si la propiedad está desactivada
+        if (property.is_activated === true) {
+            return res.status(400).json({ 
+                message: 'Debes desactivar la propiedad para continuar con la operación',
+                propertyInfo: {
+                    nombre: property.nombre,
+                    comuna: property.comuna
+                }
+            });
+        }
+
+        // Propiedad ya desactivada, enviar datos para confirmación frontend
+        // El frontend mostrará el diálogo de confirmación
+        if (req.query.confirm !== 'true') {
+            return res.status(200).json({
+                requireConfirmation: true,
+                message: `¿Estás seguro de eliminar la propiedad ${property.nombre} de ${property.comuna}? Este cambio es irreversible, la información y archivos de la propiedad se perderán.`,
+                propertyInfo: {
+                    _id: property._id,
+                    nombre: property.nombre,
+                    comuna: property.comuna
+                }
+            });
+        }
+
+        // Si llegamos aquí, el usuario ha confirmado la eliminación
+        
+        // Eliminar todas las imágenes de Firebase Storage
+        if (property.foto_casa && property.foto_casa.length > 0) {
+            try {
+                const deletePromises = property.foto_casa.map(foto => {
+                    const urlParts = foto.url.split('/');
+                    const fileName = urlParts[urlParts.length - 1];
+                    const filePath = `propiedades/${fileName}`;
+                    
+                    console.log(`Eliminando imagen: ${filePath}`);
+                    return deleteFileFromFirebase(filePath);
+                });
+
+                await Promise.all(deletePromises);
+                console.log(`Se eliminaron ${property.foto_casa.length} imágenes de Firebase Storage`);
+            } catch (error) {
+                console.error('Error al eliminar imágenes de Firebase:', error);
+                // Continuar con la eliminación aunque falle la eliminación de imágenes
+            }
+        }
+
+        // Finalmente, eliminar la propiedad de MongoDB
+        await Propiedad.findByIdAndDelete(_id);
+
+        res.status(200).json({ 
+            message: 'Propiedad eliminada con éxito', 
+            property 
+        });
+    } catch (error) {
+        console.error('Error eliminando propiedad:', error);
+        res.status(500).json({ message: 'Error eliminando propiedad', error: error.message });
+    }
+};
 
 const buildFilterQuery = (query) => {
     const filter = {};

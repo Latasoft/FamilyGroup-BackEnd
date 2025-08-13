@@ -56,3 +56,16 @@ export async function eliminarArchivoAntiguo(url) {
     console.warn('No se pudo eliminar el archivo anterior:', error.message);
   }
 }
+
+//Eliminar archivos de firebase
+export const deleteFileFromFirebase = async (filePath) => {
+  try {
+    const file = bucket.file(filePath);
+    await file.delete();
+    console.log(`Archivo eliminado con éxito: ${filePath}`);
+    return true;
+  } catch (error) {
+    console.error(`Error al eliminar archivo ${filePath}:`, error);
+    throw error;
+  }
+};

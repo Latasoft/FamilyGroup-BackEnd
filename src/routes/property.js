@@ -5,11 +5,13 @@ import {
   getPropertyById,
   updateProperty,
   desactivateProperty,
+  activateProperty,
   getFilteredProperties,
   getAllPropertiesIncludingInactive,
   getPropertyByType,
   getPropertyByIdWithAgent,
-  getFeaturedProperties // Importar el controlador para propiedades destacadas
+  getFeaturedProperties, // Importar el controlador para propiedades destacadas
+  dropProperty // Importar dropProperty
 } from '../controller/property.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import { verifyRoles } from '../middleware/verifyRoles.js';
@@ -63,5 +65,15 @@ router.patch(
   verifyRoles('ADMINISTRADOR'),
   desactivateProperty
 );
+
+router.patch(
+  '/:_id/activate',
+  authMiddleware,
+  verifyRoles('ADMINISTRADOR'),
+  activateProperty
+);
+
+// Ruta para dropProperty - debe ser una ruta DELETE
+router.delete('/:_id', authMiddleware, verifyRoles('ADMINISTRADOR'), dropProperty);
 
 export default router;
