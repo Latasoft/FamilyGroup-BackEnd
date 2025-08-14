@@ -1,7 +1,7 @@
 import cors from 'cors';
 import { isProduction } from './config.js'; // Verifica si estás en producción
 
-const allowedOrigins = ['http://localhost:4200']; //temporal
+const allowedOrigins = ['https://familygroup-frontend.onrender.com']; //temporal
 const corsOptions = {
     origin: function (origin, callback) {
         if (allowedOrigins.includes(origin) || !origin) {
