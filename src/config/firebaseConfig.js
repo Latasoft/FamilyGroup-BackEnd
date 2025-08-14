@@ -1,28 +1,23 @@
 import admin from "firebase-admin";
-import { fileURLToPath } from "url";
-import path from "path";
-import fs from "fs/promises";
 import { FIREBASE_STORAGE_BUCKET } from "./config.js";
 
-// Convertir `import.meta.url` a una ruta válida
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+let serviceAccount;
 
-// Ruta absoluta al archivo de credenciales
-const serviceAccountPath = "/etc/secrets/firebase-key.json";
+try {
+    // Try to get credentials from environment variable
+    serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+} catch (error) {
+    console.error('Error parsing Firebase credentials:', error);
+    throw new Error('FIREBASE_CREDENTIALS environment variable is required');
+}
 
-// Leer el archivo JSON de credenciales
-const serviceAccount = JSON.parse(
-  await fs.readFile(serviceAccountPath, "utf-8")
-);
-
-// Inicializar Firebase Admin SDK
+// Initialize Firebase Admin SDK
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: `gs://${FIREBASE_STORAGE_BUCKET}`, // Bucket desde el archivo .env o config.js
+    credential: admin.credential.cert(serviceAccount),
+    storageBucket: `gs://${FIREBASE_STORAGE_BUCKET}`,
 });
 
-// Acceso al bucket de Storage
+// Get Storage bucket reference
 const bucket = admin.storage().bucket();
 
 export { bucket };
