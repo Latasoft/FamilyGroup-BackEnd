@@ -1,7 +1,7 @@
 import cors from 'cors';
 import { isProduction } from './config.js'; // Verifica si estás en producción
 
-const allowedOrigins = ['https://frontendinmobiliaria-hzc3.onrender.com','https://familypropiedades.cl','https://frontendinmobiliaria.onrender.com'] // Reemplaza con la URL de tu frontend en producción
+const allowedOrigins = ['http://localhost:4200']; //temporal
 const corsOptions = {
     origin: function (origin, callback) {
         if (allowedOrigins.includes(origin) || !origin) {
