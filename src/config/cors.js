@@ -1,8 +1,9 @@
 import cors from 'cors';
 
 const defaultOrigins = [
-  'https://familygroup-frontend.onrender.com',
-  'http://localhost:4200'
+  'https://familygroup-frontend.onrender.com/',
+  'http://localhost:4200',
+  'https://familypropiedades.cl'
 ];
 
 const env = process.env.ALLOWED_ORIGINS;
