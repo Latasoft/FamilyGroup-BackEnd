@@ -3,7 +3,7 @@ import cors from 'cors';
 const defaultOrigins = [
   'https://familygroup-frontend.onrender.com/',
   'http://localhost:4200',
-  'https://familypropiedades.cl/',
+  'https://www.familypropiedades.cl/',
   'https://familygroup-frontend.onrender.com'
 ];
 
